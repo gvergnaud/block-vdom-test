@@ -1,34 +1,46 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Thousand
 
-## Getting Started
-
-First, run the development server:
+Test repository to better understand the concept of block virtual dom.
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
+
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Findings
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Block virtual dom doesn't seem generally applicable. It only works when component props are interpolated in a VDOM tree directly, without being modified by the render function in any way.
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+That's because the `block` function does not pass props to components:
 
-## Learn More
+```ts
+//                                These types are lies.
+//                                         👇
+const BlockComp = block(({ a, b }: { a: string; b: number }) => {
+  // `a` isn't a `string` but a `Hole`.
+  // `b` isn't a `number` but a `Hole`.
+});
+```
 
-To learn more about Next.js, take a look at the following resources:
+We can't use an effect in a block because we don't have access to real props:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```ts
+const BlockComp = block(({ x }: { x: number }) => {
+  React.useEffect(() => {
+    el.style.transform = `translateX(${x}px)`;
+    //                                 ^ ❌
+    //              Will be [Object object]
+  }, []);
+});
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+They can only be pure presentational components:
 
-## Deploy on Vercel
+```tsx
+const BlockComp = block(({ name }: { name: string }) => {
+  // Works
+  return <p>Hello, {name}</p>;
+});
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+Basically, `block` turns all props into signals. Updating this component is essentially instant, but it can't contain conditional logic, or anything interesting. A block is basically a template.
