@@ -95,7 +95,7 @@ const update = (newProps) => {
 
 ### Limitations
 
-The main limitation is that a block component can only be a template, that doesn't transform props in any way.
+1. The main limitation is that a block component can only be a template, that doesn't transform props in any way.
 
 ```tsx
 //                               Still a lie
@@ -108,12 +108,48 @@ const BlockComp = block(({ x }: { x: number }) => {
 
 The component can't contain conditional logic either. The DOM content must be static, except for interpolated props.
 
-**Secondly**, creating a block means opting out of the react tree. The JSX defined in a block isn't React, so if you try rendering another React component inside of it, million will call `ReactDOM.createRoot` under the hood and create a new root for this component. That means this component won't be able to access React's Context, and it's unclear how calling `root.render` performs compared to having this component part of the main react tree.
+2. creating a block means opting out of the react tree. The JSX defined in a block isn't React, so if you try rendering another React component inside of it, million will call `ReactDOM.createRoot` under the hood and create a new root for this component. That means this component won't be able to access React's Context, and it's unclear how calling `root.render` performs compared to having this component part of the main react tree.
 
-**Thirdly**, `block`s can't be server-side rendered, since they turn JSX into DOM nodes.
+3. `block`s can't be server-side rendered, since they turn JSX into DOM nodes.
 
 ### Perf
 
 Basically, `block` turns all props into signals. Updating this component is essentially instant, but it can't contain conditional logic, or anything interesting. A block is just a template.
 
 Block virtual dom isn't generally applicable but might be a good fit for perf-sensitive leaf components that tend to be re-rendered very frequently.
+
+## Ideas to fix these limitations
+
+- Avoid breaking React context by returning a "wall" component with shouldUpdate = false.
+- use a props context and wrap react child components into it.
+- provide refs to v-elements containing holes
+- provide SignalS instead of props that can be mapped over: `props.name.map(transformName)`
+- on re-renders, update dom directly
+
+```tsx
+const Comp = block(({ name }) => {
+  return (
+    <div>
+      <p>Hello {name}</p>
+      <Child />
+    </div>
+  );
+});
+```
+
+👇
+
+```tsx
+return (
+  <PropsProvider value={props}>
+    <Wall>
+      <div>
+        <p ref={nameRef}>Hello {props.name}</p>
+        <PropsConsumer>
+          <Child />
+        </PropsConsumer>
+      </div>
+    </Wall>
+  </PropsProvider>
+);
+```

@@ -9,7 +9,7 @@ export const Greeting = ({ name }: { name: string }) => {
     <RenderBlock>
       {BlockComponent({
         name: NameSpan({ firstName: name }),
-        child: HaskellCurryWikipediaPage({}),
+        child: HaskellCurryWikipediaPage({ name: name + "!!!!!" }),
       })}
     </RenderBlock>
   );
@@ -34,14 +34,14 @@ const NameSpan = block(({ firstName }: { firstName: string }) => {
   return <span className="text-red-600">!!{firstName}!!</span>;
 });
 
-const HaskellCurryWikipediaPage = block(() => {
+const HaskellCurryWikipediaPage = block(({ name }) => {
   return (
     <table className="infobox biography vcard">
       <tbody>
         <tr>
           <th className="infobox-above">
             <div className="fn" style={{ display: "inline" }}>
-              Haskell Brooks Curry
+              {name}
             </div>
           </th>
         </tr>

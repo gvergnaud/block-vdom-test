@@ -13,10 +13,22 @@ export default function HomePage() {
         onChange={(e) => setName(e.target.value)}
       />
 
-      <Greeting name={name}></Greeting>
-      <Greeting name={name}></Greeting>
-      <Greeting name={name}></Greeting>
-      <Greeting name={name}></Greeting>
+      <Greeting name={name} />
+      <Greeting name={name} />
+      <Greeting name={name} />
+      <Greeting name={name} />
+      <Greeting name={name} />
+      <Greeting name={name} />
+      <Greeting name={name} />
+      <Greeting name={name} />
+      <Greeting name={name} />
+      <Greeting name={name} />
+      <Greeting name={name} />
+      <Greeting name={name} />
+      <Greeting name={name} />
+      <Greeting name={name} />
+      <Greeting name={name} />
+      <Greeting name={name} />
     </div>
   );
 }
