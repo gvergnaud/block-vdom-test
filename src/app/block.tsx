@@ -54,9 +54,10 @@ export const block = <P extends BlockProps>(fn: (props: P) => VNode) => {
     const edits: Edit[] = [];
 
     const mount = (parent: Node) => {
-      // We call the component using the our proxy instead of props.
-      // How does that work??? I would expect the component to throw
-      // because it didn't receive the props it where expecting... 🤔
+      // We call the component using a proxy instead of props.
+      // How doesn't that throw?? 🤔
+      // [EDIT] it does throw if you do more than just
+      // interpolating props.
       const vnode = fn(propsProxy as P);
       // vnode contains Holes.
 
@@ -78,7 +79,7 @@ export const block = <P extends BlockProps>(fn: (props: P) => VNode) => {
         } else if (edit.type === "child") {
           if (isBlock(value)) {
             // If it's a child block, mount it.
-            // [UPDATE from myself] Use a fragment element
+            // Use a fragment element
             // to avoid overriding the existing children of el.
             const frag = document.createDocumentFragment();
             value.mount(frag);
