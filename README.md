@@ -11,6 +11,8 @@ npm run dev
 
 ### How it works
 
+Find the full clone implementation [here](https://github.com/gvergnaud/block-vdom-test/blob/main/src/app/block.tsx).
+
 [Million.js](https://million.dev/) exposes a `block` function that wraps a react component:
 
 ```ts

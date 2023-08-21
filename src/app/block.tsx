@@ -1,12 +1,3 @@
-/**
- * Following: https://github.com/aidenybai/hundred
- *
- * Questions:
- * - wouldn't passing a record of Holes instead of props
- *   break the component if it uses this prop for some other purpose?
- *   Shouldn't Holes be proxies as well, to expose the properties of what has been accessed?
- */
-
 type Props = Record<string, VNode | VNode[]>;
 
 export type BlockProps<K extends string = string> = Record<
@@ -34,111 +25,6 @@ class Hole {
   constructor(public key: string) {}
 }
 
-// `block` turns a component into a block.
-const block1 = (fn: (props: Props) => VNode) => {
-  // The main idea of block vdom is to findout
-  // which props mapps to which node in the VTree.
-  // We do that thanks to a props proxy returning
-  // a "Hole" instance:
-
-  const propsProxy = new Proxy(
-    {},
-    {
-      get: (_target, key: string) => {
-        return new Hole(key);
-      },
-    }
-  );
-
-  // We call the component using the our proxy instead of props.
-  // How does that work??? I would expect the component to throw
-  // because it didn't receive the props it where expecting... 🤔
-  const vnode = fn(propsProxy);
-  // vnode contains Holes.
-};
-
-/**
- * Render does two things:
- * - it turns a VNode into html
- * - it records "edits". these are a list of mappings between
- *   between a prop key, and a position on the dom.
- */
-
-type Edit =
-  | {
-      type: "attribute";
-      path: number[];
-      attributeName: string;
-      propName: string;
-    }
-  | {
-      type: "child";
-      path: number[];
-      index: number;
-      propName: string;
-    };
-
-const render = (
-  vnode: VNode,
-  edits: Edit[],
-  path: number[] = []
-): HTMLElement | Text => {
-  if (typeof vnode === "string" || typeof vnode === "number")
-    return document.createTextNode(vnode.toString());
-
-  const el = document.createElement(vnode.type);
-
-  for (const [key, value] of Object.entries(vnode.props)) {
-    if (key === "children") continue;
-
-    if (value instanceof Hole) {
-      edits.push({
-        type: "attribute",
-        attributeName: key,
-        path,
-        propName: value.key,
-      });
-      continue;
-    } else {
-      // @ts-ignore
-      el[key] = value;
-    }
-  }
-
-  const childrenArray = Array.isArray(vnode.props.children)
-    ? vnode.props.children
-    : vnode.props.children
-    ? [vnode.props.children]
-    : [];
-
-  for (const [index, child] of childrenArray.entries()) {
-    if (child instanceof Hole) {
-      edits.push({
-        type: "child",
-        propName: child.key,
-        index,
-        path,
-      });
-      continue;
-    } else {
-      el.appendChild(render(child, edits, path.concat(index)));
-    }
-  }
-
-  return el;
-};
-
-// const component = block((props: { className: string }) => {
-//   return h("div", { className: props.className }, h("p", {}, "Hello world!"));
-// });
-
-// const el = render(component({  }));
-// console.log();
-
-/**
- * Step 4
- */
-
 export type Block = {
   mount: (parent: Node) => void;
   patch: (block: Block) => void;
@@ -146,6 +32,7 @@ export type Block = {
   edits: Edit[];
 };
 
+// `block` turns a component into a block.
 export const block = <P extends BlockProps>(fn: (props: P) => VNode) => {
   return (props: P): Block => {
     // The main idea of block vdom is to findout
@@ -235,6 +122,77 @@ export const block = <P extends BlockProps>(fn: (props: P) => VNode) => {
 
     return { mount, patch, props, edits };
   };
+};
+
+/**
+ * Render does two things:
+ * - it turns a VNode into html
+ * - it records "edits". these are a list of mappings between
+ *   between a prop key, and a position on the dom.
+ */
+
+type Edit =
+  | {
+      type: "attribute";
+      path: number[];
+      attributeName: string;
+      propName: string;
+    }
+  | {
+      type: "child";
+      path: number[];
+      index: number;
+      propName: string;
+    };
+
+const render = (
+  vnode: VNode,
+  edits: Edit[],
+  path: number[] = []
+): HTMLElement | Text => {
+  if (typeof vnode === "string" || typeof vnode === "number")
+    return document.createTextNode(vnode.toString());
+
+  const el = document.createElement(vnode.type);
+
+  for (const [key, value] of Object.entries(vnode.props)) {
+    if (key === "children") continue;
+
+    if (value instanceof Hole) {
+      edits.push({
+        type: "attribute",
+        attributeName: key,
+        path,
+        propName: value.key,
+      });
+      continue;
+    } else {
+      // @ts-ignore
+      el[key] = value;
+    }
+  }
+
+  const childrenArray = Array.isArray(vnode.props.children)
+    ? vnode.props.children
+    : vnode.props.children
+    ? [vnode.props.children]
+    : [];
+
+  for (const [index, child] of childrenArray.entries()) {
+    if (child instanceof Hole) {
+      edits.push({
+        type: "child",
+        propName: child.key,
+        index,
+        path,
+      });
+      continue;
+    } else {
+      el.appendChild(render(child, edits, path.concat(index)));
+    }
+  }
+
+  return el;
 };
 
 const getElFromPath = (el: Node, path: number[]): Node => {
